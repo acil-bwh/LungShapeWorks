@@ -1,0 +1,28 @@
+This folder includes one application (buildmesh) and the graphics library it
+uses (vcglib)
+
+More information about VCG library can be obtained here:
+http://vcg.isti.cnr.it/vcglib/
+
+The application "buildmesh" is a slight modification of one of the example
+applications VCG library provided.
+
+Originally the program takes the input file of PLY format that contains only
+vertices (points) and creates the output file of PLY format with triangle mesh
+by connecting the original points using "ball pivoting" method.
+
+With the modified form, it takes the input file of ASC format (which is just
+a text file with X Y Z in each line for each point) and creates the output file
+of OBJ format with triangle mesh using the same algorithm.
+
+A simple CMakeLists.txt is provided to build the program "buildmesh", an
+example usage is: From a build directory, LungShapeWorks-build, at the same
+level of the source repository LungShapeWorks, type:
+
+cmake ../LungShapeWorks/src/buildmesh && make
+
+The executable will be built in LungShapeWorks-build. An example usage is:
+
+./buildmesh test.asc test-out.obj -r 20.0 -c 0.2
+
+Running ./buildmesh without arguments shows usage and meaning of the arguments
