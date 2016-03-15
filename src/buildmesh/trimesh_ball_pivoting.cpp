@@ -20,7 +20,7 @@
 * for more details.                                                         *
 *                                                                           *
 ****************************************************************************/
-#include<vcg/complex/complex.h>
+#include <vcg/complex/complex.h>
 
 #include <vcg/complex/algorithms/update/bounding.h>
 #include <vcg/complex/algorithms/update/topology.h>
@@ -38,57 +38,70 @@ using namespace std;
 class MyFace;
 class MyVertex;
 
-struct MyUsedTypes : public UsedTypes<	Use<MyVertex>		::AsVertexType,
-                                                                                Use<MyFace>			::AsFaceType>{};
+struct MyUsedTypes : public UsedTypes< Use<MyVertex>::AsVertexType, Use<MyFace>::AsFaceType > {};
 
 class MyVertex  : public Vertex< MyUsedTypes, vertex::Coord3f, vertex::Normal3f, vertex::BitFlags, vertex::Mark>{};
 class MyFace    : public Face  < MyUsedTypes, face::VertexRef, face::Normal3f, face::BitFlags > {};
 class MyMesh    : public vcg::tri::TriMesh< vector<MyVertex>, vector<MyFace> > {};
 
-bool callback(int percent, const char *str) {
-  cout << "str: " << str << " " << percent << "%\n";
+bool callback(int percent, const char *str)
+{
+  //cout << "str: " << str << " " << percent << "%\n";
   return true;
 }
 
-int  main(int argc, char **argv)
+int main(int argc, char **argv)
 {
- if(argc<3)
-    {
-        printf(
+  if (argc < 3)
+  {
+    printf(
       "Usage: %s filein.asc fileout.obj [opt]\n"
       "options: \n"
       "-r <val> radius of the rolling ball\n"
       "-c <val> clustering radius (as fraction of radius) default: 0.05\n", argv[0]
-            );
-        exit(0);
+    );
+    exit(0);
+  }
+
+  float radius = 0.0f;
+  float clustering = 0.05;
+  int i = 3;
+  while (i < argc)
+  {
+    if (argv[i][0]!='-')
+    {
+      printf("Error unable to parse option '%s'\n",argv[i]); exit(0);
     }
+    switch(argv[i][1])
+    {
+        case 'r':
+          radius = atof(argv[++i]);
+          printf("Using %f sphere radius\n", radius);
+          break;
+        case 'c':
+          clustering = atof(argv[++i]);
+          printf("Using %f clustering radius\n",clustering);
+          break;
+        default:
+          printf("Error unable to parse option '%s'\n",argv[i]);
+          exit(0);
+    }
+    ++i;
+  }
 
-   float radius = 0.0f;
-   float clustering = 0.05;
-   int i = 3;
-    while(i<argc)
-        {
-            if(argv[i][0]!='-')
-                {printf("Error unable to parse option '%s'\n",argv[i]); exit(0);}
-            switch(argv[i][1])
-            {
-                case 'r' :	radius = atof(argv[++i]); printf("Using %f sphere radius\n",radius);  break;
-                case 'c' :	clustering = atof(argv[++i]); printf("Using %f clustering radius\n",clustering); break;
+  if (radius == 0)
+  {
+    printf("Autodetecting ball radius...\n");
+  }
 
-                default : {printf("Error unable to parse option '%s'\n",argv[i]); exit(0);}
-            }
-            ++i;
-        }
-    if(radius == 0)
-      printf("Autodetecting ball radius...\n");
+  MyMesh m;
 
-    MyMesh m;
+  if (vcg::tri::io::ImporterASC<MyMesh>::Open(m,argv[1])!=0)
+  {
+    printf("Error reading file  %s\n",argv[1]);
+    exit(0);
+  }
 
-    if(vcg::tri::io::ImporterASC<MyMesh>::Open(m,argv[1])!=0)
-        {
-      printf("Error reading file  %s\n",argv[1]);
-            exit(0);
-        }
   vcg::tri::UpdateBounding<MyMesh>::Box(m);
   vcg::tri::UpdateNormal<MyMesh>::PerFace(m);
   printf("Input mesh  vn:%i fn:%i\n",m.VN(),m.FN());
@@ -110,5 +123,4 @@ int  main(int argc, char **argv)
   int mask = 0;
   vcg::tri::io::ExporterOBJ<MyMesh>::Save(m,argv[2],mask);
   return 0;
-
 }
