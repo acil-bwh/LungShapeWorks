@@ -58,13 +58,15 @@ int main(int argc, char **argv)
       "Usage: %s filein.asc fileout.obj [opt]\n"
       "options: \n"
       "-r <val> radius of the rolling ball\n"
-      "-c <val> clustering radius (as fraction of radius) default: 0.05\n", argv[0]
+      "-c <val> clustering radius (as fraction of radius). default: 0.2\n"
+      "-a <val> max angle between two faces. default: 90 degrees\n", argv[0]
     );
     exit(0);
   }
 
   float radius = 0.0f;
-  float clustering = 0.05;
+  float clustering = 0.2;
+  float angle = 90;
   int i = 3;
   while (i < argc)
   {
@@ -80,7 +82,11 @@ int main(int argc, char **argv)
           break;
         case 'c':
           clustering = atof(argv[++i]);
-          printf("Using %f clustering radius\n",clustering);
+          printf("Using %f clustering radius\n", clustering);
+          break;
+        case 'a':
+          angle = atof(argv[++i]);
+          printf("Using %f maximum angle (degree)\n", angle);
           break;
         default:
           printf("Error unable to parse option '%s'\n",argv[i]);
@@ -106,19 +112,15 @@ int main(int argc, char **argv)
   vcg::tri::UpdateNormal<MyMesh>::PerFace(m);
   printf("Input mesh  vn:%i fn:%i\n",m.VN(),m.FN());
 
-  int t0=clock();
   // Initialization
-  tri::BallPivoting<MyMesh> pivot(m, radius, clustering);
-  printf("Ball radius: %f\nClustering points withing %f radii\n", pivot.radius, clustering);
+  float angle_radian = angle * M_PI / 180.0;
+  tri::BallPivoting<MyMesh> pivot(m, radius, clustering, angle_radian);
+  printf("Ball radius: %f\nClustering points within %f radii\n", pivot.radius, clustering);
 
-  int t1=clock();
   // the main processing
   pivot.BuildMesh(callback);
 
-  int t2=clock();
-
   printf("Output mesh vn:%i fn:%i\n",m.VN(),m.FN());
-  printf("Created in :%i msec (%i+%i)\n",t2-t0,t1-t0,t2-t1);
 
   int mask = 0;
   vcg::tri::io::ExporterOBJ<MyMesh>::Save(m,argv[2],mask);

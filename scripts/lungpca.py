@@ -35,7 +35,7 @@ def save_obj(fname, v, f):
     np.savetxt(fname, v, fmt='v %g %g %g')
     with open(fname, 'a') as fp:
         np.savetxt(fp, f, fmt='f %d %d %d')
-
+        
 def main():
     desc = """This script reads correspondent point sets, computes PCA, save
     resulting principal components, eigenvalues (variance), and mean data. 
@@ -56,6 +56,12 @@ def main():
     
     out_dir : str, optional
         output directory (sub-directory 'output' of in_dir if not given)
+        
+    num_modes: int, optional
+        number of modes to save (full modes if not specified)
+        
+    text : boolean, optional
+        save output files in ascii text format (default is numpy binary)
     """
 
     parser = OptionParser(description=desc)
@@ -71,6 +77,10 @@ def main():
     parser.add_option('-o', '--out_dir', type='string', dest='out_dir', default=None,
                       help="output directory (sub-directory 'output' \
                       of in_dir if not given)")
+    parser.add_option('-n', '--num_modes', type='int', dest='num_modes', default=0,
+                      help="number of modes to save (full modes if not specified)")
+    parser.add_option('-t', '--text', action='store_true', dest='text', default=False,
+                      help='save output files in ascii text format (default is numpy binary)')
 
     (op, args) = parser.parse_args()
     if not op.in_dir or not op.in_file:
@@ -120,11 +130,14 @@ def main():
         print 'Process requires at least 2 point set files.'
         exit()
     
-    # samples_to_exclude = [0, 14, 15, 20, 32, 35, 36, 40, 43, 45]
+    # to apply correction matrix (RAS to IJK) to align back to original CT image
+    # turned out that this is unnecessary
+    # ras2ijk = np.array([[-1, 0, 0], [0, -1, 0], [0, 0, 1]])
 
     data = np.array([])
     for fname in point_files:
         s = np.loadtxt(fname)
+        # s = np.dot(s, ras2ijk)
         v = np.reshape(s, -1) # make vector
         if not data.any():
             data = v
@@ -135,6 +148,8 @@ def main():
     print 'dimension of data matrix: {0}'.format(data.shape)
     U, E, A = pca(data)
     print U.shape
+    
+    full_num_modes = U.shape[1]
     
     # print variances per mode
     sumE = np.sum(E)
@@ -149,21 +164,36 @@ def main():
     #print I
     print 'determinent of U.T*U: {0}'.format(np.linalg.det(I)) 
     print 'trace of U.T*U: {0}'.format(I.trace())
-
-    # save serialized mean
-    fname = os.path.join(op.out_dir, 'pca-mean.txt')
-    np.savetxt(fname, A)
     
-    # save eigenvalues
-    fname = os.path.join(op.out_dir, 'pca-eigvals.txt')
-    np.savetxt(fname, E)
+    # truncate U to keep first N modes
+    if op.num_modes > 0 and op.num_modes < full_num_modes:
+        print 'keeping only first {0} modes in the output data...'.format(op.num_modes)
+        U = np.delete(U, np.s_[op.num_modes:full_num_modes], axis=1)
+        print 'dimension of U after truncation: {0}'.format(U.shape)
     
-    # save principal components
-    fname = os.path.join(op.out_dir, 'pca-modes.txt')
-    np.savetxt(fname, U)
+    if op.text:
+        # save serialized mean
+        fname = os.path.join(op.out_dir, 'pca-mean.txt')
+        np.savetxt(fname, A)
+        
+        # save eigenvalues
+        fname = os.path.join(op.out_dir, 'pca-eigvals.txt')
+        np.savetxt(fname, E)
+        
+        # save principal components
+        fname = os.path.join(op.out_dir, 'pca-modes.txt')
+        np.savetxt(fname, U)
+    else: 
+        # save mean, variance, and modes in one zipped numpy binary (uncompressed)
+        # with 4-byte float data type
+        fname = os.path.join(op.out_dir, 'lung-asm.npz')
+        np.savez(fname, mean=A.astype(np.dtype('f4')), 
+                        variance=E.astype(np.dtype('f4')), 
+                        modes=U.astype(np.dtype('f4')))
 
     # save average asc & obj
     mean = np.reshape(A, (-1,3))
+    print 'center of mean shape: {0}'.format(mean.mean(axis=0))
 
     fname = os.path.join(op.out_dir, 'data-mean.asc') # for reading from MeshLab
     np.savetxt(fname, mean)

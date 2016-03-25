@@ -39,10 +39,9 @@ def show_mean():
         print(obj.name)
         obj.rotation_euler = [0, 0, math.radians(90)]
 
-def show_pca():
+def show_pca(num_modes = 5):
     if not check_data_path():
         return
-    num_modes = 5
     for i in range(num_modes):
         k_str = ['pos', 'neg']
         for k in range(2):
@@ -52,7 +51,7 @@ def show_pca():
             for obj in obj_objects:
                 print(obj.name)
                 obj.rotation_euler = [0, 0, math.radians(90)]
-                obj.location.x = i * -320
+                obj.location.x = i * 320
                 obj.location.z = k * 400
                 obj.location.y = 0
 
@@ -73,7 +72,7 @@ def show_data():
             for obj in obj_objects:
                 print(obj.name)
                 obj.rotation_euler = [0, 0, math.radians(90)]
-                obj.location.x = j * -320
+                obj.location.x = j * 320
                 obj.location.z = i * 400
                 obj.location.y = 0
             k += 1
