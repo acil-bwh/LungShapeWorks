@@ -466,11 +466,6 @@ def main():
         parser.print_help()
         exit()
         
-    if not op.asm_dir and not op.ref_name:
-        logger.error('either -d ASM_DIR or -r REF_NAME should be provided.')
-        parser.print_help()
-        exit()
-    
     output_dir = op.out_dir
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
@@ -493,8 +488,11 @@ def main():
     logger.info('creating reference surface model...')
     if op.asm_dir:
         ref_stl, ref_obj, ref_polydata = create_ref_model_from_pca_mean(op.asm_dir)
-    else:
+    elif op.ref_name:
         ref_stl, ref_obj, ref_polydata = create_ref_model(stl_files, op.ref_name)
+    else:
+        logger.warn('either -d ASM_DIR or -r REF_NAME should be provided to proceed.')
+        return
 
     logger.info('-----------------------------------------')
     logger.info('Building point-to-point correspondence...')
